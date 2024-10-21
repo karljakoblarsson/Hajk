@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
 
 const prisma = new PrismaClient();
@@ -366,6 +367,22 @@ async function populateLayerStructure() {
   return { ro };
 }
 
+async function addDummyUsers() {
+  const dummyUsers = [
+    {
+      fullName: "Henrik Hallberg",
+      email: "henrik@hallberg.se",
+      password: "admin",
+      authType: "CREDENTIALS",
+    },
+  ];
+
+  for await (const user of dummyUsers) {
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+    await prisma.user.create({ data: { ...user, password: hashedPassword } });
+  }
+}
+
 async function main() {
   // Get all layers from layers.json and insert them into the layers table.
   await readAndPopulateLayers();
@@ -378,6 +395,8 @@ async function main() {
   // Finally we extract the layer switcher config from all maps and add all groups etc. with their connections to the database.
   // We're gonna want to keep crucial information such as the map layer structure separated from specific plugins such as the layer switcher.
   await populateLayerStructure();
+
+  await addDummyUsers();
 }
 
 main()

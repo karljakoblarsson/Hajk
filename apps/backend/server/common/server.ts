@@ -30,6 +30,12 @@ import HttpStatusCodes from "./http-status-codes.ts";
 import { HajkError, RouteError } from "./classes.ts";
 import { HttpError } from "express-openapi-validator/dist/framework/types.js";
 import { isInstanceOfPrismaError } from "./utils/is-instance-of-prisma-error.ts";
+import { ExpressAuth } from "@auth/express";
+import { authOptions } from "./auth/auth-options.ts";
+import {
+  authenticatedUser,
+  currentSession,
+} from "./middlewares/auth.middleware.ts";
 
 const logger = log4js.getLogger("hajk");
 
@@ -219,6 +225,14 @@ class Server {
       this.app.use(detailedRequestLogger);
   }
 
+  private setupAuthMiddleware() {
+    if (process.env.ENABLE_AUTH === "true") {
+      this.app.use(currentSession);
+      this.app.use("/api/v3/auth", ExpressAuth(authOptions));
+      this.app.use(authenticatedUser);
+    }
+  }
+
   private setupMiddlewares() {
     this.app.use(
       helmet({
@@ -232,10 +246,13 @@ class Server {
 
     this.app.use(
       cors({
-        origin: "*",
+        origin: "http://localhost:3001",
         optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+        credentials: true,
       })
     );
+
+    this.setupAuthMiddleware();
 
     // Enable compression early so that responses that follow will get gziped
     if (process.env.ENABLE_GZIP_COMPRESSION !== "false") {

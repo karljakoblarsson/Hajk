@@ -1,14 +1,17 @@
 {
   "translation": {
     "common.clickableLogo": "Klickbar logga",
+    "common.email": "Epost",
     "common.english": "Engelska",
     "common.goodbye": "Hej då",
-    "common.groups": "Grupper",     
+    "common.groups": "Grupper",
     "common.hello": "Hej",
     "common.home": "Hem",
     "common.language": "Språk",
     "common.layers": "Lager",
+    "common.login": "Logga in",
     "common.maps": "Kartor",
+    "common.password": "Lösenord",
     "common.scrolltotop": "Till toppen",
     "common.services": "Tjänster",
     "common.settings": "Inställningar",
