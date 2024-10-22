@@ -50,6 +50,12 @@ export const authOptions: ExpressAuthConfig = {
       },
     }),
   ],
+  callbacks: {
+    async redirect({ url }) {
+      // TODO: Proper redirect-checks to allow for relative urls etc.
+      return url;
+    },
+  },
   cookies: {
     csrfToken: {
       name:

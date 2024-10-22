@@ -13,6 +13,7 @@ const createApiClient = (): AxiosInstance => {
 
   const apiClient = axios.create({
     baseURL: apiBaseUrl,
+    withCredentials: true,
   });
 
   const matchesUrlPart = (url: string, ruleWithWildCard: string) => {
