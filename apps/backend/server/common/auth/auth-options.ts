@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
 import log4js from "log4js";
 import Credentials from "@auth/express/providers/credentials";
 import bcrypt from "bcrypt";
 import type { ExpressAuthConfig } from "@auth/express";
+import prisma from "../prisma.ts";
 
 const logger = log4js.getLogger("auth.logger");
-
-const prisma = new PrismaClient();
 
 export const authOptions: ExpressAuthConfig = {
   providers: [
@@ -51,8 +49,11 @@ export const authOptions: ExpressAuthConfig = {
     }),
   ],
   callbacks: {
-    async redirect({ url }) {
-      // TODO: Proper redirect-checks to allow for relative urls etc.
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+
       return url;
     },
   },
