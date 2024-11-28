@@ -40,7 +40,6 @@ const defaultState = {
   opacity: 1.0,
   maxZoom: -1,
   minZoom: -1,
-  minMaxZoomAlertOnToggleOnly: false,
   tiled: false,
   showAttributeTableButton: false,
   singleTile: false,
@@ -1006,8 +1005,6 @@ class WMSLayerForm extends Component {
           infoClickSortType: layer.infoClickSortType ?? "string",
           rotateMap: layer.rotateMap ?? "n",
           hideExpandArrow: layer.hideExpandArrow ?? false,
-          minMaxZoomAlertOnToggleOnly:
-            layer.minMaxZoomAlertOnToggleOnly ?? false,
           useCustomDpiList: layer.useCustomDpiList ?? false,
           customDpiList:
             layer.customDpiList?.length > 0
@@ -1317,7 +1314,6 @@ class WMSLayerForm extends Component {
       opacity: this.getValue("opacity"),
       maxZoom: this.getValue("maxZoom"),
       minZoom: this.getValue("minZoom"),
-      minMaxZoomAlertOnToggleOnly: this.getValue("minMaxZoomAlertOnToggleOnly"),
       singleTile: this.getValue("singleTile"),
       hidpi: this.getValue("hidpi"),
       useCustomDpiList: this.state.useCustomDpiList,
@@ -1385,7 +1381,6 @@ class WMSLayerForm extends Component {
       value = Number(value || -1);
       return value === 0 ? -1 : value;
     }
-    if (fieldName === "minMaxZoomAlertOnToggleOnly") value = input.checked;
     if (fieldName === "date") value = create_date();
     if (fieldName === "singleTile") value = input.checked;
     if (fieldName === "hidpi") value = input.checked;
