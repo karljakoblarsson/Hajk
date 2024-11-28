@@ -1,68 +1,21 @@
 import React from "react";
 import propTypes from "prop-types";
-import LayerItem from "./LayerItem.js";
-import { styled } from "@mui/material/styles";
-import { Accordion, AccordionDetails, AccordionSummary } from "@mui/material";
-import { Box, Typography, Divider, IconButton, Link } from "@mui/material";
+import LayerItem from "./LayerItem";
+import GroupLayer from "./GroupLayer";
+import LayerGroupAccordion from "./LayerGroupAccordion.js";
+import {
+  Box,
+  Typography,
+  Divider,
+  IconButton,
+  ListItemText,
+  Link,
+} from "@mui/material";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
-import InfoIcon from "@mui/icons-material/Info";
 import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import HajkToolTip from "components/HajkToolTip.js";
-
-const StyledAccordion = styled(Accordion)(() => ({
-  borderRadius: 0,
-  boxShadow: "none",
-  backgroundImage: "none",
-}));
-
-const StyledAccordionSummary = styled(AccordionSummary)(() => ({
-  minHeight: 35,
-  padding: "0px",
-  overflow: "hidden",
-  "&.MuiAccordionSummary-root.Mui-expanded": {
-    minHeight: 35,
-  },
-  "& .MuiAccordionSummary-content": {
-    transition: "inherit",
-    marginTop: 0,
-    marginBottom: 0,
-    "&.Mui-expanded": {
-      marginTop: 0,
-      marginBottom: 0,
-    },
-  },
-}));
-
-const StyledAccordionDetails = styled(AccordionDetails)(() => ({
-  width: "100%",
-  display: "block",
-  padding: "0",
-}));
-
-const SummaryContainer = styled("div")(({ theme }) => ({
-  display: "flex",
-  flexBasis: "100%",
-  borderBottom: `${theme.spacing(0.2)} solid ${theme.palette.divider}`,
-}));
-
-const HeadingTypography = styled(Typography)(({ theme }) => ({
-  fontSize: theme.typography.pxToRem(15),
-  flexBasis: "100%",
-}));
-
-const ExpandButtonWrapper = styled("div")(() => ({
-  float: "left",
-}));
-
-const checkBoxIconStyle = {
-  cursor: "pointer",
-  float: "left",
-  marginRight: "5px",
-  padding: "0",
-};
+import InfoIcon from "@mui/icons-material/Info";
+import HajkToolTip from "components/HajkToolTip";
 
 class LayerGroup extends React.PureComponent {
   state = {
@@ -72,6 +25,7 @@ class LayerGroup extends React.PureComponent {
     name: "",
     parent: "-1",
     toggled: false,
+
     chapters: [],
     infogrouptitle: "",
     infogrouptext: "",
@@ -89,24 +43,25 @@ class LayerGroup extends React.PureComponent {
 
   static propTypes = {
     app: propTypes.object.isRequired,
-    chapters: propTypes.array.isRequired,
     child: propTypes.bool.isRequired,
     expanded: propTypes.bool.isRequired,
     group: propTypes.object.isRequired,
     handleChange: propTypes.func,
-    model: propTypes.object.isRequired,
+    localObserver: propTypes.object.isRequired,
+    layerMap: propTypes.object.isRequired,
   };
 
   constructor(props) {
     super(props);
-    this.model = this.props.model;
     this.bindVisibleChangeForLayersInGroup();
   }
 
   componentDidMount() {
     this.setState({
       ...this.props.group,
+      expanded: this.props.group.isExpanded,
     });
+    this.allLayers = this.props.app.getMap().getAllLayers();
   }
 
   componentWillUnmount() {
@@ -158,9 +113,10 @@ class LayerGroup extends React.PureComponent {
     });
   };
 
-  handleChange = (panel) => (event, expanded) => {
+  handleChange = (panel) => (event, isExpanded) => {
     this.setState({
-      expanded: expanded ? panel : false,
+      expanded: isExpanded ? panel : false,
+      isExpanded: isExpanded,
     });
   };
 
@@ -172,14 +128,15 @@ class LayerGroup extends React.PureComponent {
     return this.state.groups.map((group, i) => {
       return (
         <LayerGroup
+          filterChangeIndicator={group.changeIndicator}
           expanded={expanded === group.id}
           key={i}
           group={group}
-          model={this.props.model}
+          localObserver={this.props.localObserver}
+          layerMap={this.props.layerMap}
           handleChange={this.handleChange}
           app={this.props.app}
           child={true}
-          chapters={this.props.chapters}
           options={this.props.options}
         />
       );
@@ -286,32 +243,31 @@ class LayerGroup extends React.PureComponent {
   }
 
   toggleLayers(visibility, layers) {
-    this.props.app
-      .getMap()
-      .getAllLayers()
+    this.allLayers
       .filter((mapLayer) => {
         return layers.some((layer) => layer.id === mapLayer.get("name"));
       })
       .forEach((mapLayer) => {
         if (mapLayer.get("layerType") === "group") {
           if (visibility === true) {
-            this.model.observer.publish("showLayer", mapLayer);
+            this.props.localObserver.publish("showLayer", mapLayer);
           } else {
-            this.model.observer.publish("hideLayer", mapLayer);
+            this.props.localObserver.publish("hideLayer", mapLayer);
           }
+        } else {
+          mapLayer.setVisible(visibility);
         }
-        mapLayer.setVisible(visibility);
       });
   }
 
   getCheckbox = () => {
     if (this.isToggled()) {
-      return <CheckBoxIcon sx={checkBoxIconStyle} />;
+      return <CheckBoxIcon />;
     }
     if (this.isSemiToggled()) {
-      return <CheckBoxIcon sx={{ ...checkBoxIconStyle, color: "gray" }} />;
+      return <CheckBoxIcon sx={{ color: "gray" }} />;
     }
-    return <CheckBoxOutlineBlankIcon sx={checkBoxIconStyle} />;
+    return <CheckBoxOutlineBlankIcon />;
   };
 
   toggleInfo = () => {
@@ -457,7 +413,7 @@ class LayerGroup extends React.PureComponent {
 
     if (this.props.group.toggled) {
       return (
-        <SummaryContainer
+        <div
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -470,100 +426,82 @@ class LayerGroup extends React.PureComponent {
             }
           }}
         >
-          <div>{this.getCheckbox()}</div>
-          <HeadingTypography
-            sx={{
-              fontWeight:
-                this.isToggled() || this.isSemiToggled() ? "bold" : "normal",
-            }}
-          >
-            {this.state.name}
-          </HeadingTypography>
-          {this.renderGroupInfoToggler()}
-        </SummaryContainer>
-      );
-    } else {
-      return (
-        <SummaryContainer>
-          <HeadingTypography
-            sx={{
-              fontWeight:
-                this.isToggled() || this.isSemiToggled() ? "bold" : "normal",
-            }}
-          >
-            {this.state.name}
-          </HeadingTypography>
-          {this.renderGroupInfoToggler()}
-        </SummaryContainer>
+          <IconButton sx={{ pl: 0 }} disableRipple size="small">
+            {this.getCheckbox()}
+          </IconButton>
+        </div>
       );
     }
+    return;
+  }
+
+  renderChildren() {
+    // const { expanded } = this.state;
+    return (
+      <div>
+        {this.props.group.layers.map((layer, i) => {
+          const mapLayer = this.props.layerMap[layer.id];
+          // If mapLayer doesn't exist, the layer shouldn't be displayed
+          if (!mapLayer) {
+            return null;
+          }
+
+          // Check if it's a group or a regular layer
+          const isGroup = mapLayer.get("layerType") === "group";
+          const Component = isGroup ? GroupLayer : LayerItem;
+
+          // Render the component with the appropriate attributes
+          return (
+            <Component
+              display={!layer.isFiltered ? "none" : "block"}
+              key={mapLayer.get("name")}
+              layer={mapLayer}
+              draggable={false}
+              toggleable={true}
+              app={this.props.app}
+              localObserver={this.props.localObserver}
+              groupLayer={layer}
+            />
+          );
+        })}
+        {this.renderLayerGroups()}
+      </div>
+    );
+  }
+
+  static getDerivedStateFromProps(nextProps, prevState) {
+    // Check if the isExpanded property has changed
+    if (nextProps.group.isExpanded !== prevState.isExpanded) {
+      return {
+        expanded: nextProps.group.isExpanded,
+        isExpanded: nextProps.group.isExpanded, // Keep a copy of isExpanded in state for comparison
+      };
+    }
+    return null;
   }
 
   render() {
     const { expanded } = this.state;
     return (
-      // If the layerItem is a child, it should be rendered a tad to the
-      // right. Apparently 21px.
-      <Box sx={{ marginLeft: this.props.child ? "21px" : "0px" }}>
-        <StyledAccordion
-          expanded={this.state.expanded}
-          TransitionProps={{
-            timeout: 0,
-          }}
-          onChange={() => {
-            this.setState({
-              expanded: !this.state.expanded,
-            });
-          }}
-        >
-          <Box>
-            <StyledAccordionSummary>
-              <ExpandButtonWrapper>
-                {expanded ? (
-                  <KeyboardArrowDownIcon
-                    onClick={() => this.toggleExpanded()}
-                  />
-                ) : (
-                  <KeyboardArrowRightIcon
-                    onClick={() => this.toggleExpanded()}
-                  />
-                )}
-              </ExpandButtonWrapper>
-              {this.renderToggleAll()}
-            </StyledAccordionSummary>
-            {this.renderGroupInfoDetails()}
-          </Box>
-
-          <StyledAccordionDetails>
-            <div>
-              {this.state.layers.map((layer, i) => {
-                const mapLayer = this.model.layerMap[layer.id];
-                if (mapLayer) {
-                  return (
-                    <LayerItem
-                      key={mapLayer.get("name")}
-                      layer={mapLayer}
-                      model={this.props.model}
-                      options={this.props.options}
-                      chapters={this.props.chapters}
-                      app={this.props.app}
-                      onOpenChapter={(chapter) => {
-                        const informativeWindow = this.props.app.windows.find(
-                          (window) => window.type === "informative"
-                        );
-                        informativeWindow.props.custom.open(chapter);
-                      }}
-                    />
-                  );
-                } else {
-                  return null;
-                }
-              })}
-              {this.renderLayerGroups()}
-            </div>
-          </StyledAccordionDetails>
-        </StyledAccordion>
-      </Box>
+      <LayerGroupAccordion
+        display={!this.props.group.isFiltered ? "none" : "block"}
+        toggleable={this.props.group.toggled}
+        expanded={expanded}
+        toggleDetails={this.renderToggleAll()}
+        layerGroupTitle={
+          <ListItemText
+            primaryTypographyProps={{
+              py: this.props.group.toggled ? 0 : "3px",
+              pl: this.props.group.toggled ? 0 : "3px",
+              variant: "body1",
+              fontWeight:
+                this.isToggled() || this.isSemiToggled() ? "bold" : "inherit",
+            }}
+            primary={this.state.name}
+          />
+        }
+        children={this.renderChildren()}
+      ></LayerGroupAccordion>
     );
   }
 }
