@@ -13,8 +13,8 @@ import { useLayerZoomWarningSnackbar } from "./useLayerZoomWarningSnackbar";
 import { functionalOk as functionalCookieOk } from "../../models/Cookie";
 import LocalStorageHelper from "../../utils/LocalStorageHelper";
 
-export const QUICK_ACCESS_KEY = "quickAccess";
-export const QUICK_ACCESS_LS_KEY = "quickAccessLayers";
+const QUICK_ACCESS_KEY = "quickAccess";
+const QUICK_ACCESS_LS_KEY = "quickAccessLayers";
 
 const getOlLayerState = (l) => ({
   opacity: l.get("opacity"),
@@ -168,7 +168,7 @@ const getGroupConfigById = (tree, groupId) => {
   }
 };
 
-const setQuickAccessStateInLocalStorage = (map) => {
+export const setQuickAccessStateInLocalStorage = (map) => {
   if (functionalCookieOk()) {
     const qaLayers = map
       .getAllLayers()
